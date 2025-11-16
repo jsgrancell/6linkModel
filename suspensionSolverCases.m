@@ -38,7 +38,7 @@ function [forcesF, forcesR, frontMaxes, rearMaxes, loadsF, loadsR] = suspensionS
     rF = outboardF - locationsF;
     rR = outboardR - locationsR;
     A = zeros(6);                                                          % Initializes a matrix to store unit vectors and moment vectors
-    [loadTableF, loadTableR] = loadCases(carParams, Gs(:, 1:2))           % Creates a table of x, y, and z loads using car parameters and acceleration pairs
+    [loadTableF, loadTableR] = loadCases(carParams, Gs(:, 1:2));           % Creates a table of x, y, and z loads using car parameters and acceleration pairs
     if exist('specialCasesF', 'var')
         for i = 1:length(specialCasesF(1))
             loadTableF(size(loadTableF,1)+i, :) = specialCasesF;
