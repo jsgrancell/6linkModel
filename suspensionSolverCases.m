@@ -27,11 +27,11 @@
 function [forcesF, forcesR, frontMaxes, rearMaxes, loadsF, loadsR] = suspensionSolverCases(carParams, Gs, specialCasesF, specialCasesR)
     inboardF = carParams.inboardF;
     outboardF = carParams.outboardF;
-    locationsF = [carParams.tireContactPtF(1,1), carParams.tireContactPtF(1,2), -8*25.4];
+    locationsF = [carParams.tireContactPtF(1,1), carParams.tireContactPtF(1,2), 8*25.4+carParams.tireContactPtF(1,3)];
     locationsF = [locationsF; locationsF; locationsF; locationsF; locationsF; locationsF];
     inboardR = carParams.inboardR;
     outboardR = carParams.outboardR;
-    locationsR = [carParams.tireContactPtR(1,1), carParams.tireContactPtR(1,2), -8*25.4];
+    locationsR = [carParams.tireContactPtR(1,1), carParams.tireContactPtR(1,2), 8*25.4+carParams.tireContactPtR(1,3)];
     locationsR = [locationsR; locationsR; locationsR; locationsR; locationsR; locationsR];
     RF = locationsF-[carParams.tireContactPtF; carParams.tireContactPtF];
     RR = locationsR-[carParams.tireContactPtR; carParams.tireContactPtR];
@@ -69,14 +69,15 @@ function [forcesF, forcesR, frontMaxes, rearMaxes, loadsF, loadsR] = suspensionS
         forcesF(i,:) = (A\B)';                                             % Fills the respective row of the forces matrix with the forces through each arm
     end
     frontMaxes = findMaxes(forcesF);
-    frontMaxes.Properties.VariableNames = {'Up-Fore','Up-Aft','Low-Fore','Low-Aft','Pushrod','Tie Rod'};
+    frontMaxes.Properties.VariableNames = {'Up-Fore (N)','Up-Aft (N)','Low-Fore (N)','Low-Aft (N)','Pushrod (N)','Tie Rod (N)'};
     frontMaxes.Properties.RowNames = {'Max Tension', 'Max Compression'};
     forcesF = array2table(forcesF);
-    forcesF.Properties.VariableNames = {'Up-Fore','Up-Aft','Low-Fore','Low-Aft','Pushrod','Tie Rod'};
+    forcesF.Properties.VariableNames = {'Up-Fore F (N)','Up-Aft F (N)','Low-Fore F (N)','Low-Aft F (N)','Pushrod F (N)','Toe Rod F (N)'};
     forcesF.Properties.RowNames = {'Max Accel', 'Max Braking', 'Max Cornering Left', 'Max Cornering Right', 'Combined Accel/Cornering Left', 'Combined Accel/Cornering Right', 'Combined Braking/Cornering Left', 'Combined Braking/Cornering Right', 'Max Bump'};
-    loadsF = findMaxes(loadTableF);
+    loadsF = array2table(loadTableF);
     loadsF = loadsF(:,3:5);
-    loadsF.Properties.VariableNames = {'Longitudinal (+ forwards, - backwards)', 'Lateral (+ right, - left)', 'Vertical (+ down, - up)'};
+    loadsF.Properties.RowNames = {'Max Accel', 'Max Braking', 'Max Cornering Left', 'Max Cornering Right', 'Combined Accel/Cornering Left', 'Combined Accel/Cornering Right', 'Combined Braking/Cornering Left', 'Combined Braking/Cornering Right', 'Max Bump'};
+    loadsF.Properties.VariableNames = {'X Force F (N)', 'Y Force F (N)', 'Z Force F (N)'};
     A = zeros(6);
     for i = 1:6                                                            
         link = (outboardR(i,:)-inboardR(i,:))';                            
@@ -95,14 +96,15 @@ function [forcesF, forcesR, frontMaxes, rearMaxes, loadsF, loadsR] = suspensionS
         forcesR(i,:) = (A\B)';     
     end
     rearMaxes = findMaxes(forcesR);
-    rearMaxes.Properties.VariableNames = {'Up-Fore','Up-Aft','Low-Fore','Low-Aft','Pushrod','Toe Rod'};
+    rearMaxes.Properties.VariableNames = {'Up-Fore (N)','Up-Aft (N)','Low-Fore (N)','Low-Aft (N)','Pushrod (N)','Toe Rod (N)'};
     rearMaxes.Properties.RowNames = {'Max Tension', 'Max Compression'};
     forcesR = array2table(forcesR);
-    forcesR.Properties.VariableNames = {'Up-Fore','Up-Aft','Low-Fore','Low-Aft','Pushrod','Toe Rod'};
+    forcesR.Properties.VariableNames = {'Up-Fore R (N)','Up-Aft R (N)','Low-Fore R (N)','Low-Aft R (N)','Pushrod R (N)','Toe Rod R (N)'};
     forcesR.Properties.RowNames = {'Max Accel', 'Max Braking', 'Max Cornering Left', 'Max Cornering Right', 'Combined Accel/Cornering Left', 'Combined Accel/Cornering Right', 'Combined Braking/Cornering Left', 'Combined Braking/Cornering Right', 'Max Bump'};
-    loadsR = findMaxes(loadTableR);
+    loadsR = array2table(loadTableR);
     loadsR = loadsR(:,3:5);
-    loadsR.Properties.VariableNames = {'Longitudinal (+ forwards, - backwards)', 'Lateral (+ right, - left)', 'Vertical (+ down, - up)'};
+    loadsR.Properties.RowNames = {'Max Accel', 'Max Braking', 'Max Cornering Left', 'Max Cornering Right', 'Combined Accel/Cornering Left', 'Combined Accel/Cornering Right', 'Combined Braking/Cornering Left', 'Combined Braking/Cornering Right', 'Max Bump'};
+    loadsR.Properties.VariableNames = {'X Force R (N)', 'Y Force R (N)', 'Z Force R (N)'};
 end
 
 % Function to find forces and weight transfer from a structure of car
@@ -112,26 +114,26 @@ function [loadTableF, loadTableR] = loadCases(carParams, accelData)
     loadTableF = zeros(size(accelData,1), 5);                              % Initializes a load table matrix to store the outputs of this function
     loadTableR = loadTableF;
     for i = 1:size(accelData,1)                                            % For each provided value of lat and long G's
-        [loadTableF(i,1), loadTableR(i,1)] = SampoWeightTransfer(carParams, accelData(i,2)*9.81);
+        [loadTableF(i,1), loadTableR(i,1)] = SampoWeightTransfer(carParams, -accelData(i,2)*9.81);
         loadTableF(i,2) = (carParams.m*9.81*accelData(i,1)*carParams.hCG)/carParams.WB;   % Calculates longitudinal WT
-        loadTableF(i,5) = -(carParams.m*9.81*carParams.PFront/2+loadTableF(i,1)-loadTableF(i,2)/2);    % Calculates Fz
+        loadTableF(i,5) = (carParams.m*9.81*carParams.PFront/2+loadTableF(i,1)-loadTableF(i,2)/2);    % Calculates Fz
         loadTableR(i,2) = (carParams.m*9.81*accelData(i,1)*carParams.hCG)/carParams.WB;   % Calculates longitudinal WT
-        loadTableR(i,5) = -(carParams.m*9.81*(1-carParams.PFront)/2+loadTableR(i,1)+loadTableR(i,2)/2);    % Calculates Fz
+        loadTableR(i,5) = (carParams.m*9.81*(1-carParams.PFront)/2+loadTableR(i,1)+loadTableR(i,2)/2);    % Calculates Fz
         if accelData(i,1) > 0 && accelData(i,2) == 0
             loadTableF(i,3) = 0;
             loadTableR(i,3) = ((1.25*carParams.m*9.81*carParams.a_s)/carParams.WB)/(1-carParams.hCG/carParams.WB*1.25)/2;
         elseif accelData(i,1) < 0
-            loadTableF(i,3) = 1.25*loadTableF(i,5);
-            loadTableR(i,3) = 1.25*loadTableR(i,5);
+            loadTableF(i,3) = -1.25*abs(loadTableF(i,5));
+            loadTableR(i,3) = -1.25*abs(loadTableR(i,5));
         elseif accelData(i,1) == 0 && accelData(i,2) ~= 0
             loadTableF(i,3) = 0;
             loadTableR(i,3) = 0;
         elseif accelData(i,1) > 0 && accelData(i,2) ~= 0
             loadTableF(i,3) = 0;
-            loadTableR(i,3) = 1.25*-loadTableR(i,5);
+            loadTableR(i,3) = 1.25*abs(loadTableR(i,5));
         end
-        loadTableF(i,4) = -loadTableF(i,5)*accelData(i,2);                  % Calculates Fy
-        loadTableR(i,4) = -loadTableR(i,5)*accelData(i,2);                  % Calculates Fy
+        loadTableF(i,4) = abs(loadTableF(i,5))*accelData(i,2);                  % Calculates Fy
+        loadTableR(i,4) = abs(loadTableR(i,5))*accelData(i,2);                  % Calculates Fy
     end
 end
 
